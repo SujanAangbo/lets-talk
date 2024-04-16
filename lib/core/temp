@@ -1,0 +1,103 @@
+
+ // for futurebuilder
+ FutureBuilder(
+               future: homeProvider.getUserChatRoom(),
+               builder: (context, snapshot) {
+                 if (snapshot.connectionState == ConnectionState.waiting) {
+                   return const DefaultProgressBar();
+                 } else {
+                   if (snapshot.hasData) {
+                     return ListView.builder(
+                       itemCount: snapshot.data!.length,
+                       itemBuilder: (context, index) {
+                         ChatRoomUserModel friendChat = snapshot.data![index];
+                         return ListTile(
+                           title: Text(friendChat.user.name ?? "Unknown"),
+                           subtitle: Text(friendChat.chatRoom.lastMessage),
+                           // leading: CachedNetworkImage(
+                           //   imageUrl: chatRoom.,
+                           // ),
+                           trailing: Text(Formatters.formatDateTime(
+                                   DateTime.tryParse(friendChat
+                                       .chatRoom.updatedOn
+                                       .toString())) ??
+                               ""),
+                           onTap: () {},
+                         );
+                       },
+                     );
+                   } else if (snapshot.hasError) {
+                     return ErrorMessageWidget(
+                         message: snapshot.error.toString());
+                   } else {
+                     print(snapshot.data?.toString());
+                     return ErrorMessageWidget(message: "No chats");
+                   }
+                 }
+               })
+
+
+
+
+               // search stream builder
+
+               StreamBuilder(
+                             stream: searchProvider.searchByEmail(),
+                             builder: (context, snapshot) {
+                               if (snapshot.connectionState == ConnectionState.active) {
+                                 if (snapshot.hasData) {
+                                   // if the no data is there
+                                   if (snapshot.data!.size == 0) {
+                                     return const Center(
+                                       child: Text("No user found"),
+                                     );
+                                   } else {
+                                     // Show actual data
+                                     final userMap = snapshot.data!.docs[0].data();
+                                     UserModel user = UserModel.fromMap(userMap);
+                                     return ListTile(
+                                       title: Text(user.name ?? "Undefined"),
+                                       subtitle: Text(user.email!),
+                                       leading: Image.network(user.profile!),
+                                       trailing: const Icon(Icons.arrow_forward_ios),
+                                       onTap: () async {
+                                         ChatRoomModel? chatRoom =
+                                             await ChatRoomRepository.getChatRoom(user.uid!);
+
+                                         if (chatRoom != null) {
+                                           Map<String, dynamic> args = {
+                                             "chat_room": chatRoom,
+                                             "friend": user,
+                                           };
+                                           if (context.mounted) {
+                                             Navigator.pushReplacementNamed(
+                                               context,
+                                               ChatRoomPage.routeName,
+                                               arguments: args,
+                                             );
+                                           }
+                                         }
+                                       },
+                                     );
+                                   }
+                                 } else if (snapshot.hasError) {
+                                   // if error
+                                   return Center(
+                                     child: Text(snapshot.error.toString()),
+                                   );
+                                 } else {
+                                   return const Center(
+                                     child: Text("No user founds"),
+                                   );
+                                 }
+                               } else if (snapshot.connectionState ==
+                                   ConnectionState.waiting) {
+                                 return const Center(
+                                   child: CircularProgressIndicator(),
+                                 );
+                               } else {
+                                 // if returns null;
+                                 return const SizedBox();
+                               }
+                             },
+                           ),
